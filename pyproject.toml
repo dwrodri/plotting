@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "plotting"
+version = "0.1.0"
+description = ""
+authors = ["Derek Rodriguez <derek.rodriguez@pm.me>"]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.11"
+pandas = "^2.0.3"
+scipy = "^1.11.1"
+matplotlib = "^3.7.2"
+numpy = "^1.25.1"
+seaborn = "^0.12.2"
+fastparquet = "^2023.7.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = {version = "^22.3.0", allow-prereleases = true}
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
