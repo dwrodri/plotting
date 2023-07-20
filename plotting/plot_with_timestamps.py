@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import ticker
+from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO)
 BRANCH_LOG_LIMIT = 100_000
@@ -63,6 +64,9 @@ def load_decode_log(filename: str) -> pd.DataFrame:
             nrows=2_005_542,
         )
 
+def load_decode_log_precomputed(filename: str) -> pd.DataFrame:
+    return pd.read_parquet(filename)
+
 
 def load_commit_log(filename: str) -> pd.DataFrame:
     """
@@ -91,9 +95,24 @@ def float_to_addr(x, pos) -> str:
     return hex(int(x))
 
 
+def find_speculated_instructions(wb_df: pd.DataFrame, decode_df: pd.DataFrame) -> pd.DataFrame:
+    # if we haven't done commit matching yet, then we need to do that
+    if not decode_df["Has Matching Commit"].any():
+            for _, wb_tsc, wb_pc in tqdm(wb_df.itertuples()):
+                decode_df.iat[
+                decode_df[
+                    (decode_df["PC"] == wb_pc)
+                    & (decode_df["Timestamp"] <= wb_tsc)
+                    & (~decode_df["Has Matching Commit"])
+                ].first_valid_index(), 2] = True
+            decode_df.to_parquet("decoded_with_spec.parquet")
+    
+    
+
+    decode_df.to_parquet("decoded_with_spec.parquet")
 def make_plot():
     branch_df = load_branch_log(
-        "/Users/dwrodri/Codespace/plotting/data/small-tagel-branch.log"
+        "/home/dwrodri/Repos/plotting/data/small-gshare-branch.log"
     )
     branch_df["Timestamp"] = branch_df["Timestamp"].astype(int)
     branch_df["PC"] = branch_df["PC"].astype(int)
@@ -101,30 +120,25 @@ def make_plot():
     taken = branch_df[branch_df["Is Branch"] & branch_df["Taken"]]
     not_taken = branch_df[branch_df["Is Branch"] & ~branch_df["Taken"]]
     jumps = branch_df[branch_df["Is Jump"]]
-    decode_df = load_decode_log(
-        "/Users/dwrodri/Codespace/plotting/data/tagel-decoded.txt"
-    )
-    decode_df = (
-        decode_df[decode_df["Timestamp"] <= max_tsc]
-        .sort_values(by="Timestamp")
-        .reset_index(drop=True)
-    )
-    writeback_df = load_commit_log(
-        "/Users/dwrodri/Codespace/plotting/data/tagel-writebacked.txt"
-    )
+    # decode_df = load_decode_log("/home/dwrodri/Repos/plotting/data/decoded.txt")
+    # decode_df = (
+    #     decode_df[decode_df["Timestamp"] <= max_tsc]
+    #     .sort_values(by="Timestamp", ascending=False)
+    #     .reset_index(drop=True)
+    # )
+    # decode_df["Has Matching Commit"] = False
+    decode_df = load_decode_log_precomputed("decoded_with_spec.parquet")
+    unspeculated_df = decode_df[decode_df["Has Matching Commit"]]
+    writeback_df = load_commit_log("/home/dwrodri/Repos/plotting/data/writebacked.txt")
     writeback_df = (
         writeback_df[writeback_df["Timestamp"] <= max_tsc]
-        .sort_values(by="Timestamp")
+        .sort_values(by="Timestamp", ascending=False)
         .reset_index(drop=True)
     )
     print(len(writeback_df))
     print("got this far")
-    unspeculated_df = pd.merge(left=writeback_df, right=decode_df, on="PC", how="right")
-    # speculated_df = decode_df[unspeculated_df["_merge"] == "left_only"]
-    print(unspeculated_df.tail())
     print(decode_df.head())
     print(writeback_df.head())
-    sys.exit()
     sns.set(font_scale=1.60)
     ax: plt.Axes = plt.gca()
     ax.plot(decode_df["Timestamp"], decode_df["PC"], "k.", label="decoded µOP")

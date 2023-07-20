@@ -7,5 +7,5 @@ sns.set(font_scale=1.75)
 
 data = [int(line.strip()) for line in sys.stdin.readlines()]
 plt.plot(np.diff(data), ".")
-plt.yscale('log')
+plt.yscale("log")
 plt.show()
