@@ -106,10 +106,10 @@ def find_speculated_instructions(wb_df: pd.DataFrame, decode_df: pd.DataFrame) -
                     & (~decode_df["Has Matching Commit"])
                 ].first_valid_index(), 2] = True
             decode_df.to_parquet("decoded_with_spec.parquet")
+    return decode_df[~decode_df["Has Matching Commit"]]
     
     
 
-    decode_df.to_parquet("decoded_with_spec.parquet")
 def make_plot():
     branch_df = load_branch_log(
         "/home/dwrodri/Repos/plotting/data/small-gshare-branch.log"
@@ -135,6 +135,7 @@ def make_plot():
         .sort_values(by="Timestamp", ascending=False)
         .reset_index(drop=True)
     )
+    writeback_df.to_parquet("writeback.parquet")
     print(len(writeback_df))
     print("got this far")
     print(decode_df.head())
