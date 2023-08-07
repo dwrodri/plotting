@@ -1,6 +1,5 @@
 {
     "python.formatting.provider": "none",
-    "peacock.color": "#42b883",
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
     }
