@@ -11,7 +11,7 @@ from matplotlib import ticker
 from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO)
-BRANCH_LOG_LIMIT = 100_000
+BRANCH_LOG_LIMIT = 2_000_000
 
 
 def print_passthru(elem):
@@ -29,7 +29,7 @@ def load_branch_log(filename: str, limit: int = BRANCH_LOG_LIMIT) -> pd.DataFram
             (
                 (
                     int(tsc, 16),  # current cycle
-                    bool(int(is_br)),  # Is this insutrction a branch?
+                    bool(int(is_br)),  # Is this instruction a branch?
                     bool(int(is_jal) | int(is_jalr)),  # Is this instruction a jump?
                     bool(int(taken)),  # Was this branch taken once resolved ?
                     int(pc, 16),  # PC of instruction
@@ -104,15 +104,15 @@ def find_speculated_instructions(
         for _, wb_tsc, wb_pc in tqdm(wb_df.itertuples()):
             decode_df.iat[
                 decode_df[
-                    (decode_df["PC"] == wb_pc)
-                    & (decode_df["Timestamp"] <= wb_tsc)
+                    (0 < (wb_tsc - decode_df["Timestamp"]) < 500)
+                    & (decode_df["PC"] == wb_pc)
                     & (~decode_df["Has Matching Commit"])
                 ].first_valid_index(),
                 2,
             ] = True
         decode_df.to_parquet("decoded_with_spec.parquet")
-
     decode_df.to_parquet("decoded_with_spec.parquet")
+    return decode_df
 
 
 def make_plot():
